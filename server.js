@@ -371,7 +371,10 @@ app.get('/api/classes/:classId/export/json', async (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date() });
 });
-
+// Home page
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'classboard-realtime.html'));
+});
 server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
