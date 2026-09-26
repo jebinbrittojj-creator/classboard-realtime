@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Classboard Interactive - Phase 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root {
+  --paper: #0a0e27;
+  --surface: #141829;
+  --ink: #e0e6ff;
+  --muted: #8892b0;
+  --line: #1f2d4d;
+  --board: #0d1f4d;
+  --board-edge: #051038;
+  --chalk: #f0f4f8;
+  --chalk-dim: #8ba4bf;
+  --accent: #00d4ff;
+  --accent-alt: #ff006e;
+  --live: #ff4757;
+  --ok: #2ed573;
+  --focus: #00b4d8;
+  --font: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --hand: "Kalam", "Comic Neue", "Segoe Print", "Bradley Hand", cursive;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-padding-top: env(safe-area-inset-top, 0px);
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background: linear-gradient(135deg, var(--paper) 0%, #0f1433 100%);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.5;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255, 0, 110, 0.03) 0%, transparent 50%);
+  z-index: -1;
+}
+
+.particle-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.2;
+  animation: drift 8s infinite ease-in-out;
+}
+
+.particle.small { width: 2px; height: 2px; background: var(--accent); }
+.particle.medium { width: 4px; height: 4px; background: var(--accent-alt); }
+.particle.large { width: 6px; height: 6px; background: var(--accent); }
+
+@keyframes drift {
+  0%, 100% { transform: translateY(0) translateX(0); opacity: 0.2; }
+  50% { opacity: 0.4; }
+}
+
+button, input, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  min-height: 40px;
+  padding: 0.45em 1em;
+  border-radius: 8px;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  text-decoration: none;
+  position: relative;
+  z-index: 1;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, var(--board), #0a2d4d);
+  border-color: var(--accent);
+  color: var(--chalk);
+}
+
+.btn.primary:hover {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
+.btn.ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+.btn.ghost:hover {
+  border-color: var(--line);
+  background: rgba(0, 212, 255, 0.05);
+}
+
+.shell {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+.topbar {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 20px;
+  background: rgba(20, 24, 41, 0.95);
+  border-bottom: 2px solid var(--line);
+  backdrop-filter: blur(10px);
+}
+
+.brand {
+  font-family: var(--hand);
+  font-weight: 700;
+  font-size: 1.45rem;
+  line-height: 1;
+  color: var(--accent);
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+}
+
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  padding: 0.25em 0.75em;
+  border-radius: 999px;
+  background: var(--live);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 0 0 12px rgba(255, 71, 87, 0.3);
+  animation: pulse 0.8s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+/* Dashboard Styles */
+.analytics-dashboard {
+  background: rgba(13, 31, 77, 0.3);
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px 0;
+  backdrop-filter: blur(5px);
+}
+
+.dashboard-title {
+  color: var(--accent);
+  font-weight: 700;
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+}
+
+.progress-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  margin: 12px 0;
+  padding: 10px;
+  background: rgba(0, 212, 255, 0.05);
+  border-left: 4px solid var(--accent);
+  border-radius: 6px;
+}
+
+.progress-label {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.progress-stats {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.progress-bar {
+  width: 150px;
+  height: 8px;
+  background: var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-alt));
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+}
+
+.response-count {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.95rem;
+  min-width: 5em;
+  text-align: right;
+}
+
+/* Student Avatars */
+.student-avatars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.student-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+  color: #000;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+  title: attr(data-name);
+}
+
+.student-avatar:hover {
+  transform: scale(1.15);
+}
+
+/* Challenge System */
+.challenge-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.challenge-card {
+  background: rgba(0, 212, 255, 0.08);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.challenge-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.2);
+  background: rgba(0, 212, 255, 0.12);
+}
+
+.challenge-card.selected {
+  border-color: var(--ok);
+  background: rgba(46, 213, 115, 0.15);
+  box-shadow: 0 0 20px rgba(46, 213, 115, 0.3);
+}
+
+.challenge-label {
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.challenge-percentage {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--ok);
+  margin: 8px 0;
+}
+
+.challenge-count {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* MCQ Styles */
+.mcq-options {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.mcq-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: rgba(0, 212, 255, 0.05);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.mcq-option:hover:not(.submitted) {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
+}
+
+.mcq-option.selected {
+  border-color: var(--accent);
+  background: rgba(0, 212, 255, 0.15);
+}
+
+.mcq-option.submitted {
+  border-color: var(--ok);
+  background: rgba(46, 213, 115, 0.1);
+  cursor: not-allowed;
+}
+
+.mcq-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+  color: #000;
+  font-weight: 700;
+}
+
+.mcq-text {
+  flex: 1;
+}
+
+.submit-status {
+  color: var(--ok);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* TPS Timer */
+.tps-phase {
+  text-align: center;
+  padding: 24px;
+}
+
+.tps-word {
+  font-family: var(--hand);
+  font-weight: 700;
+  font-size: 6rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+  animation: pop-in 0.5s cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+
+@keyframes pop-in {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.tps-timer {
+  font-size: 4rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  margin: 16px 0;
+  text-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.tps-question {
+  font-size: 1.3rem;
+  color: var(--chalk);
+  margin: 16px 0;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Text Input */
+input[type="text"],
+input[type="email"],
+textarea {
+  width: 100%;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 0.6em 0.7em;
+  color: var(--ink);
+  transition: all 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+textarea:focus {
+  border-color: var(--accent);
+  background: rgba(0, 212, 255, 0.02);
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.1);
+}
+
+/* Modal */
+dialog {
+  border: 2px solid var(--accent);
+  border-radius: 14px;
+  padding: 0;
+  background: var(--surface);
+  color: var(--ink);
+  width: min(92vw, 520px);
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+}
+
+dialog::backdrop {
+  background: rgba(10, 14, 39, 0.8);
+}
+
+.dlg {
+  padding: 24px;
+  display: grid;
+  gap: 14px;
+}
+
+.dlg h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--accent);
+}
+
+.dlg p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.dlg-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  z-index: 50;
+  background: var(--accent);
+  color: #000;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  max-width: 90vw;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+#toast.show {
+  opacity: 1;
+}
+
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+
+@media (max-width: 900px) {
+  .challenge-container {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+<body>
+<div class="particle-container" id="particleContainer"></div>
+<div id="app">
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">📚 Classboard Interactive</div>
+      <span style="flex: 1;"></span>
+      <div class="live-indicator" id="liveStatus">Waiting for students...</div>
+    </header>
+
+    <main style="flex: 1; padding: 20px; overflow-y: auto;">
+      <!-- DEMO: MCQ Slide -->
+      <div id="mcqSlide" style="display: none;">
+        <h2 style="color: var(--accent);">Which of these is a fundamental force of nature?</h2>
+        <div class="mcq-options" id="mcqOptions"></div>
+        <div class="analytics-dashboard">
+          <div class="dashboard-title">📊 Live Response Analytics</div>
+          <div class="progress-item">
+            <div>
+              <div class="progress-label">Total Responses</div>
+              <div class="student-avatars" id="responseAvatars"></div>
+            </div>
+            <div class="progress-stats">
+              <div class="progress-bar"><div class="progress-fill" id="progressBar" style="width: 0%;"></div></div>
+              <div class="response-count"><span id="responseCount">0</span>/8</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEMO: TPS Slide -->
+      <div id="tpsSlide" style="display: none;">
+        <div class="tps-phase">
+          <p class="tps-question" id="tpsQuestion">How do you think gravity affects the motion of planets?</p>
+          <div class="tps-word" id="tpsWord">THINK</div>
+          <div class="tps-timer" id="tpsTimer">00:30</div>
+          <p style="color: var(--muted);">Take your time to think about your answer</p>
+        </div>
+      </div>
+
+      <!-- DEMO: Challenge Slide -->
+      <div id="challengeSlide" style="display: none;">
+        <h2 style="color: var(--accent);">Choose Your Challenge Level</h2>
+        <div class="challenge-container" id="challengeContainer"></div>
+        <div class="analytics-dashboard">
+          <div class="dashboard-title">🎯 Challenge Distribution</div>
+          <div id="challengeAnalytics"></div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div style="margin-top: 40px; display: flex; gap: 10px; flex-wrap: wrap;">
+        <button class="btn primary" onclick="startMCQDemo()">📋 Test MCQ</button>
+        <button class="btn primary" onclick="startTPSDemo()">🔄 Test TPS</button>
+        <button class="btn primary" onclick="startChallengeDemo()">🎯 Test Challenges</button>
+        <button class="btn ghost" onclick="resetDemo()">Reset</button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<dialog id="dlg"></dialog>
+
+<script>
+// Initialize particles
+function initializeParticles() {
+  const container = document.getElementById('particleContainer');
+  const particleCount = Math.min(15, Math.max(6, Math.floor(window.innerWidth / 250)));
+
+  for (let i = 0; i < particleCount; i++) {
+    const particle = document.createElement('div');
+    const size = Math.random() * 3;
+    const sizeClass = size < 1 ? 'small' : size < 2 ? 'medium' : 'large';
+    particle.className = `particle ${sizeClass}`;
+
+    particle.style.left = Math.random() * 100 + '%';
+    particle.style.top = Math.random() * 100 + '%';
+    particle.style.animationDuration = (5 + Math.random() * 10) + 's';
+    particle.style.animationDelay = Math.random() * 5 + 's';
+
+    container.appendChild(particle);
+  }
+}
+
+initializeParticles();
+
+// Toast function
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ============================================
+// MCQ Demo
+// ============================================
+function startMCQDemo() {
+  hideAllSlides();
+  document.getElementById('mcqSlide').style.display = 'block';
+  document.getElementById('liveStatus').innerHTML = '🔴 MCQ Active - 0 responses';
+
+  const options = [
+    { letter: 'A', text: 'Gravity', correct: true },
+    { letter: 'B', text: 'Electromagnetic Force', correct: false },
+    { letter: 'C', text: 'Strong Nuclear Force', correct: false },
+    { letter: 'D', text: 'Weak Nuclear Force', correct: false }
+  ];
+
+  const container = document.getElementById('mcqOptions');
+  container.innerHTML = '';
+  let responseCount = 0;
+
+  options.forEach((opt, idx) => {
+    const div = document.createElement('div');
+    div.className = 'mcq-option';
+    div.innerHTML = `
+      <div class="mcq-letter">${opt.letter}</div>
+      <div class="mcq-text">${opt.text}</div>
+      <div class="submit-status" style="display: none;">✓ Submitted</div>
+    `;
+
+    div.onclick = function() {
+      if (!div.classList.contains('submitted')) {
+        div.classList.add('selected');
+        setTimeout(() => {
+          div.classList.remove('selected');
+          div.classList.add('submitted');
+          div.querySelector('.submit-status').style.display = 'block';
+
+          responseCount++;
+          updateMCQProgress(responseCount, options.length);
+          toast(opt.correct ? '✓ Correct!' : '✗ Incorrect - Try again!');
+
+          // Disable all options
+          document.querySelectorAll('#mcqOptions .mcq-option').forEach(el => {
+            el.style.pointerEvents = 'none';
+            el.style.opacity = '0.6';
+          });
+        }, 500);
+      }
+    };
+
+    container.appendChild(div);
+  });
+}
+
+function updateMCQProgress(count, total) {
+  document.getElementById('responseCount').textContent = count;
+  const percentage = (count / 8) * 100;
+  document.getElementById('progressBar').style.width = percentage + '%';
+  document.getElementById('liveStatus').innerHTML = `🔴 MCQ Active - ${count} responses`;
+
+  // Add student avatars
+  const avatars = document.getElementById('responseAvatars');
+  const students = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank', 'Grace', 'Henry'];
+  avatars.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const avatar = document.createElement('div');
+    avatar.className = 'student-avatar';
+    avatar.textContent = students[i].charAt(0);
+    avatar.setAttribute('data-name', students[i]);
+    avatars.appendChild(avatar);
+  }
+}
+
+// ============================================
+// TPS Demo
+// ============================================
+let tpsTimerInterval = null;
+let tpsPhase = 0;
+let tpsTime = 30;
+
+function startTPSDemo() {
+  hideAllSlides();
+  document.getElementById('tpsSlide').style.display = 'block';
+  document.getElementById('liveStatus').innerHTML = '🟢 Think-Pair-Share Active';
+
+  tpsPhase = 0;
+  runTPSPhase();
+}
+
+function runTPSPhase() {
+  const phases = ['THINK', 'PAIR', 'SHARE'];
+  const durations = [30, 30, 60];
+
+  if (tpsPhase < 3) {
+    tpsTime = durations[tpsPhase];
+    document.getElementById('tpsWord').textContent = phases[tpsPhase];
+    updateTPSTimer();
+
+    if (tpsTimerInterval) clearInterval(tpsTimerInterval);
+
+    tpsTimerInterval = setInterval(() => {
+      tpsTime--;
+      updateTPSTimer();
+
+      if (tpsTime <= 0) {
+        clearInterval(tpsTimerInterval);
+        tpsPhase++;
+        setTimeout(runTPSPhase, 500);
+      }
+    }, 1000);
+  } else {
+    // Show answers
+    showTPSAnswers();
+  }
+}
+
+function updateTPSTimer() {
+  const mins = Math.floor(tpsTime / 60);
+  const secs = tpsTime % 60;
+  document.getElementById('tpsTimer').textContent =
+    `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function showTPSAnswers() {
+  document.getElementById('tpsWord').textContent = 'SHARE';
+  document.getElementById('tpsTimer').textContent = 'Answers displayed';
+  toast('✓ TPS Complete! See answers above');
+}
+
+// ============================================
+// Challenge Demo
+// ============================================
+function startChallengeDemo() {
+  hideAllSlides();
+  document.getElementById('challengeSlide').style.display = 'block';
+  document.getElementById('liveStatus').innerHTML = '🎯 Challenge Selection Active';
+
+  const challenges = ['Challenge 1', 'Challenge 2', 'Challenge 3'];
+  const votes = [0, 0, 0];
+
+  const container = document.getElementById('challengeContainer');
+  container.innerHTML = '';
+
+  challenges.forEach((challenge, idx) => {
+    const card = document.createElement('div');
+    card.className = 'challenge-card';
+    card.innerHTML = `
+      <div class="challenge-label">${challenge}</div>
+      <div class="challenge-percentage" id="percent${idx}">0%</div>
+      <div class="challenge-count" id="count${idx}">0 students</div>
+      <div style="margin-top: 12px;">
+        <div class="student-avatars" id="avatars${idx}"></div>
+      </div>
+    `;
+
+    card.onclick = function() {
+      votes[idx]++;
+      updateChallengeVotes(votes, idx, challenges);
+      toast(`Vote recorded for ${challenge}`);
+    };
+
+    container.appendChild(card);
+  });
+
+  updateChallengeVotes(votes, -1, challenges);
+}
+
+function updateChallengeVotes(votes, selected, challenges) {
+  const total = votes.reduce((a, b) => a + b, 0);
+  const students = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank', 'Grace', 'Henry'];
+
+  votes.forEach((count, idx) => {
+    const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+    document.getElementById(`percent${idx}`).textContent = percent + '%';
+    document.getElementById(`count${idx}`).textContent = count + ' student' + (count !== 1 ? 's' : '');
+
+    // Add avatars
+    const avatars = document.getElementById(`avatars${idx}`);
+    avatars.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      const avatar = document.createElement('div');
+      avatar.className = 'student-avatar';
+      avatar.textContent = students[i].charAt(0);
+      avatar.setAttribute('data-name', students[i]);
+      avatars.appendChild(avatar);
+    }
+
+    // Highlight selected
+    const cards = document.querySelectorAll('.challenge-card');
+    if (selected === idx) {
+      cards[idx].classList.add('selected');
+    } else {
+      cards[idx].classList.remove('selected');
+    }
+  });
+
+  // Update analytics
+  const analytics = document.getElementById('challengeAnalytics');
+  analytics.innerHTML = votes.map((v, i) => `
+    <div class="progress-item">
+      <div class="progress-label">${challenges[i]}</div>
+      <div class="progress-stats">
+        <div class="progress-bar"><div class="progress-fill" style="width: ${total > 0 ? (v/total)*100 : 0}%;"></div></div>
+        <div class="response-count">${v}/${total}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================
+// Utilities
+// ============================================
+function hideAllSlides() {
+  document.getElementById('mcqSlide').style.display = 'none';
+  document.getElementById('tpsSlide').style.display = 'none';
+  document.getElementById('challengeSlide').style.display = 'none';
+  if (tpsTimerInterval) clearInterval(tpsTimerInterval);
+}
+
+function resetDemo() {
+  hideAllSlides();
+  document.getElementById('liveStatus').innerHTML = 'Waiting for students...';
+  toast('Demo reset');
+}
+
+// Allow clicking students to see names
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('student-avatar')) {
+    const name = e.target.getAttribute('data-name');
+    toast(`👤 ${name}`);
+  }
+});
+</script>
+</body>
+</html>

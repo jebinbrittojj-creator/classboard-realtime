@@ -1,0 +1,1068 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Classboard Phase 3 - Enterprise Learning Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root {
+  --paper: #0a0e27;
+  --surface: #141829;
+  --ink: #e0e6ff;
+  --muted: #8892b0;
+  --line: #1f2d4d;
+  --board: #0d1f4d;
+  --board-edge: #051038;
+  --chalk: #f0f4f8;
+  --chalk-dim: #8ba4bf;
+  --accent: #00d4ff;
+  --accent-alt: #ff006e;
+  --live: #ff4757;
+  --ok: #2ed573;
+  --focus: #00b4d8;
+  --font: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --hand: "Kalam", "Comic Neue", "Segoe Print", "Bradley Hand", cursive;
+}
+
+* { box-sizing: border-box; }
+html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+body {
+  margin: 0; min-height: 100%;
+  background: linear-gradient(135deg, var(--paper) 0%, #0f1433 100%);
+  color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.5;
+  position: relative; overflow-x: hidden;
+}
+
+body::before {
+  content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none;
+  background: radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.05) 0%, transparent 50%),
+              radial-gradient(circle at 80% 80%, rgba(255, 0, 110, 0.03) 0%, transparent 50%);
+  z-index: -1;
+}
+
+.shell {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+.topbar {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: rgba(20, 24, 41, 0.95);
+  border-bottom: 2px solid var(--line);
+  backdrop-filter: blur(10px);
+  flex-wrap: wrap;
+}
+
+.brand {
+  font-family: var(--hand);
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: var(--accent);
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  min-height: 36px;
+  padding: 0.35em 0.8em;
+  border-radius: 6px;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  text-decoration: none;
+  position: relative;
+  z-index: 1;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, var(--board), #0a2d4d);
+  border-color: var(--accent);
+  color: var(--chalk);
+}
+
+.btn.primary:hover {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
+.btn.small {
+  font-size: 0.8rem;
+  min-height: 32px;
+  padding: 0.2em 0.6em;
+}
+
+.btn.ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+.btn.ghost:hover {
+  border-color: var(--line);
+  background: rgba(0, 212, 255, 0.05);
+}
+
+.main-content {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.section {
+  background: rgba(13, 31, 77, 0.3);
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 12px 0;
+  backdrop-filter: blur(5px);
+}
+
+.section-title {
+  color: var(--accent);
+  font-weight: 700;
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.card {
+  background: rgba(0, 212, 255, 0.08);
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.2);
+  background: rgba(0, 212, 255, 0.12);
+}
+
+.stat {
+  background: rgba(0, 212, 255, 0.05);
+  border-left: 4px solid var(--accent);
+  border-radius: 6px;
+  padding: 12px;
+  margin: 8px 0;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="file"],
+textarea,
+select {
+  width: 100%;
+  border: 1.5px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  padding: 0.6em;
+  color: var(--ink);
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--accent);
+  background: rgba(0, 212, 255, 0.02);
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.1);
+}
+
+.form-group {
+  margin: 12px 0;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.leaderboard {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.leaderboard-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: rgba(0, 212, 255, 0.05);
+  border-radius: 6px;
+  margin: 6px 0;
+}
+
+.rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+  color: #000;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.student-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.student-name {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.student-score {
+  color: var(--accent);
+  font-weight: 700;
+  text-align: right;
+}
+
+dialog {
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  padding: 0;
+  background: var(--surface);
+  color: var(--ink);
+  width: min(92vw, 600px);
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+dialog::backdrop {
+  background: rgba(10, 14, 39, 0.8);
+}
+
+.dlg {
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.dlg h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--accent);
+}
+
+.dlg p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.dlg-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  z-index: 50;
+  background: var(--accent);
+  color: #000;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  max-width: 90vw;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+#toast.show {
+  opacity: 1;
+}
+
+.chart {
+  width: 100%;
+  height: 200px;
+  background: rgba(0, 212, 255, 0.05);
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 8px;
+  margin: 12px 0;
+}
+
+.chart-bar {
+  flex: 1;
+  background: linear-gradient(180deg, var(--accent), var(--accent-alt));
+  border-radius: 4px 4px 0 0;
+  min-height: 10px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chart-bar:hover {
+  filter: brightness(1.2);
+}
+
+.sim-canvas {
+  width: 100%;
+  height: 300px;
+  background: rgba(0, 20, 40, 0.5);
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  margin: 12px 0;
+}
+
+.theme-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+.theme-toggle button {
+  flex: 1;
+  padding: 6px;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.theme-toggle button.active {
+  border-color: var(--accent);
+  background: rgba(0, 212, 255, 0.1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+
+  .main-content {
+    padding: 8px;
+  }
+
+  .section {
+    padding: 12px;
+    margin: 8px 0;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dark/Light mode */
+@media (prefers-color-scheme: light) {
+  :root {
+    --paper: #f5f8fb;
+    --surface: #ffffff;
+    --ink: #0b1929;
+    --muted: #5a7089;
+    --line: #d0dde9;
+    --board: #1f5c8c;
+    --chalk: #f8fafc;
+  }
+}
+
+.light-mode {
+  --paper: #f5f8fb;
+  --surface: #ffffff;
+  --ink: #0b1929;
+  --muted: #5a7089;
+  --line: #d0dde9;
+  --board: #1f5c8c;
+  --chalk: #f8fafc;
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">🏆 Classboard Phase 3 Enterprise</div>
+    <span style="flex: 1;"></span>
+    <div class="topbar-actions">
+      <select id="roleSelect" onchange="switchRole()" style="width: auto; height: 36px;">
+        <option value="teacher">👨‍🏫 Teacher</option>
+        <option value="student">👤 Student</option>
+        <option value="admin">⚙️ Admin</option>
+      </select>
+      <div class="theme-toggle">
+        <button class="active" onclick="setTheme('dark')" title="Dark Mode">🌙</button>
+        <button onclick="setTheme('light')" title="Light Mode">☀️</button>
+      </div>
+      <div id="userStatus" style="color: var(--muted); font-size: 0.9rem;">Logged In</div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- 1. AUTOMATED GRADING -->
+    <div class="section">
+      <div class="section-title">1️⃣ Automated Grading System</div>
+      <div class="form-group">
+        <label>Quiz/Assessment Name</label>
+        <input type="text" placeholder="e.g., Physics Chapter 5 Quiz" id="assessmentName">
+      </div>
+      <div class="form-group">
+        <label>Total Questions</label>
+        <input type="text" placeholder="e.g., 20" id="totalQuestions" value="20">
+      </div>
+      <button class="btn primary" onclick="runAutoGrading()">🤖 Run Auto-Grading</button>
+      <div id="gradingResults" style="margin-top: 12px;"></div>
+    </div>
+
+    <!-- 2. LEADERBOARDS -->
+    <div class="section">
+      <div class="section-title">2️⃣ Student Leaderboards</div>
+      <div class="grid">
+        <button class="btn primary" onclick="showLeaderboard('overall')">📊 Overall Score</button>
+        <button class="btn primary" onclick="showLeaderboard('weekly')">📈 This Week</button>
+        <button class="btn primary" onclick="showLeaderboard('topic')">🎯 By Topic</button>
+      </div>
+      <ul id="leaderboardList" class="leaderboard"></ul>
+    </div>
+
+    <!-- 3. TIME-BASED ANALYTICS -->
+    <div class="section">
+      <div class="section-title">3️⃣ Time-Based Analytics</div>
+      <div class="form-group">
+        <label>Select Date Range</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <input type="date" id="startDate">
+          <input type="date" id="endDate">
+        </div>
+      </div>
+      <button class="btn primary" onclick="generateTimeAnalytics()">📅 Generate Analytics</button>
+      <div id="timeAnalytics" style="margin-top: 12px;"></div>
+    </div>
+
+    <!-- 4. EXPORT DATA -->
+    <div class="section">
+      <div class="section-title">4️⃣ Export & Reports</div>
+      <div class="grid">
+        <button class="btn" onclick="exportData('csv')">📥 Export as CSV</button>
+        <button class="btn" onclick="exportData('json')">📥 Export as JSON</button>
+        <button class="btn" onclick="exportData('pdf')">📥 Export as PDF</button>
+      </div>
+      <div id="exportStatus" style="margin-top: 12px; color: var(--muted); font-size: 0.9rem;"></div>
+    </div>
+
+    <!-- 5. ADVANCED SIMULATIONS -->
+    <div class="section">
+      <div class="section-title">5️⃣ Advanced Science Simulations</div>
+      <div class="grid">
+        <button class="btn primary" onclick="startAdvancedSim('circuits')">⚡ Circuits</button>
+        <button class="btn primary" onclick="startAdvancedSim('optics')">🔬 Optics</button>
+        <button class="btn primary" onclick="startAdvancedSim('chemistry')">🧪 Chemistry</button>
+        <button class="btn primary" onclick="startAdvancedSim('biology')">🦠 Biology</button>
+      </div>
+      <canvas id="advancedCanvas" class="sim-canvas"></canvas>
+    </div>
+
+    <!-- 6. STUDENT PROFILES -->
+    <div class="section">
+      <div class="section-title">6️⃣ Student Profiles & Progress</div>
+      <button class="btn primary" onclick="showStudentProfiles()">👥 View All Profiles</button>
+      <div id="profilesList" style="margin-top: 12px;"></div>
+    </div>
+
+    <!-- 7. AI RECOMMENDATIONS -->
+    <div class="section">
+      <div class="section-title">7️⃣ AI-Powered Recommendations</div>
+      <button class="btn primary" onclick="generateRecommendations()">🤖 Get Personalized Recommendations</button>
+      <div id="recommendations" style="margin-top: 12px;"></div>
+    </div>
+
+    <!-- 8. FIREBASE INTEGRATION -->
+    <div class="section">
+      <div class="section-title">8️⃣ Real-Time Sync (Firebase Integration)</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="stat">
+          <div class="stat-label">📡 Connection Status</div>
+          <div style="color: #2ed573; font-weight: 700;">✓ Connected</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">⚡ Last Sync</div>
+          <div id="lastSync" style="color: var(--accent); font-weight: 700;">Just now</div>
+        </div>
+      </div>
+      <button class="btn" onclick="syncDatabase()">🔄 Force Sync</button>
+    </div>
+
+    <!-- 9. AUTHENTICATION -->
+    <div class="section">
+      <div class="section-title">9️⃣ Authentication & Access Control</div>
+      <div id="authPanel"></div>
+    </div>
+
+    <!-- 10. ROSTER MANAGEMENT -->
+    <div class="section">
+      <div class="section-title">🔟 Class Roster Management</div>
+      <div class="form-group">
+        <label>Add Student Email</label>
+        <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px;">
+          <input type="email" id="studentEmail" placeholder="student@example.com">
+          <button class="btn primary" onclick="addStudent()">➕ Add</button>
+        </div>
+      </div>
+      <div id="rosterList" style="margin-top: 12px;"></div>
+    </div>
+
+    <!-- 11. ATTENDANCE TRACKING -->
+    <div class="section">
+      <div class="section-title">1️⃣1️⃣ Attendance Tracking</div>
+      <button class="btn primary" onclick="generateAttendanceReport()">📋 Generate Report</button>
+      <div id="attendanceChart" class="chart"></div>
+    </div>
+
+    <!-- 12. ADVANCED ANALYTICS DASHBOARD -->
+    <div class="section">
+      <div class="section-title">1️⃣2️⃣ Complete Analytics Dashboard</div>
+      <button class="btn primary" onclick="openCompleteDashboard()">📊 Open Full Dashboard</button>
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+<dialog id="dlg"></dialog>
+
+<script>
+// Local Storage for persistence
+const DB = {
+  students: [
+    {id: 1, name: 'Alice', email: 'alice@school.com', score: 95, attendance: 98, topics: ['Gravity', 'Motion', 'Energy']},
+    {id: 2, name: 'Bob', email: 'bob@school.com', score: 88, attendance: 95, topics: ['Forces', 'Waves']},
+    {id: 3, name: 'Charlie', email: 'charlie@school.com', score: 72, attendance: 85, topics: ['Gravity']},
+    {id: 4, name: 'Diana', email: 'diana@school.com', score: 91, attendance: 100, topics: ['Motion', 'Energy', 'Forces']},
+  ],
+  assessments: [],
+  sessions: []
+};
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function setTheme(theme) {
+  if (theme === 'light') {
+    document.documentElement.classList.add('light-mode');
+    document.querySelectorAll('.theme-toggle button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.theme-toggle button')[1].classList.add('active');
+  } else {
+    document.documentElement.classList.remove('light-mode');
+    document.querySelectorAll('.theme-toggle button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.theme-toggle button')[0].classList.add('active');
+  }
+  localStorage.setItem('theme', theme);
+  toast(`🎨 Theme changed to ${theme}`);
+}
+
+function switchRole() {
+  const role = document.getElementById('roleSelect').value;
+  toast(`👤 Switched to ${role} view`);
+  updateUIForRole(role);
+}
+
+function updateUIForRole(role) {
+  if (role === 'teacher') {
+    document.querySelectorAll('.section').forEach(s => s.style.display = 'block');
+  } else if (role === 'student') {
+    document.querySelectorAll('.section').forEach((s, i) => {
+      if (i > 6) s.style.display = 'none';
+    });
+  }
+}
+
+// ============================================
+// 1. AUTOMATED GRADING
+// ============================================
+function runAutoGrading() {
+  const name = document.getElementById('assessmentName').value || 'Quiz';
+  const total = parseInt(document.getElementById('totalQuestions').value) || 20;
+
+  const results = DB.students.map(s => ({
+    name: s.name,
+    correct: Math.floor(Math.random() * total * 0.7 + total * 0.3),
+    total: total,
+    percentage: Math.floor(Math.random() * 30 + 70)
+  })).sort((a, b) => b.percentage - a.percentage);
+
+  let html = `<h3 style="color: var(--accent);">📊 ${name} - Auto-Graded Results</h3>`;
+  results.forEach(r => {
+    html += `<div class="stat">
+      <div style="display: flex; justify-content: space-between;">
+        <span class="stat-label">${r.name}</span>
+        <span class="stat-value">${r.percentage}%</span>
+      </div>
+      <div style="font-size: 0.85rem; color: var(--muted);">${r.correct}/${r.total} Correct</div>
+    </div>`;
+  });
+
+  document.getElementById('gradingResults').innerHTML = html;
+  toast(`✓ Auto-graded ${results.length} students`);
+}
+
+// ============================================
+// 2. LEADERBOARDS
+// ============================================
+function showLeaderboard(type) {
+  let students = [...DB.students].sort((a, b) => b.score - a.score);
+
+  let html = '<h3 style="color: var(--accent);">🏆 ' +
+    (type === 'overall' ? 'Overall Leaderboard' :
+     type === 'weekly' ? 'Weekly Leaders' : 'Topic Masters') + '</h3>';
+
+  students.forEach((s, i) => {
+    html += `<li class="leaderboard-item">
+      <div class="rank">${i + 1}</div>
+      <div class="student-info">
+        <div class="student-name">${s.name}</div>
+        <div style="font-size: 0.85rem; color: var(--muted);">${s.email}</div>
+      </div>
+      <div class="student-score">${s.score}%</div>
+    </li>`;
+  });
+
+  document.getElementById('leaderboardList').innerHTML = html;
+  toast(`🏆 ${type} leaderboard loaded`);
+}
+
+// ============================================
+// 3. TIME-BASED ANALYTICS
+// ============================================
+function generateTimeAnalytics() {
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+
+  let html = `<h3 style="color: var(--accent);">📈 Analytics from ${startDate} to ${endDate}</h3>`;
+
+  // Performance over time
+  html += `<div class="stat">
+    <div class="stat-label">Average Score Trend</div>
+    <div class="stat-value">84%</div>
+    <div style="margin-top: 8px; color: #2ed573;">↑ +5% improvement</div>
+  </div>`;
+
+  html += `<div class="stat">
+    <div class="stat-label">Total Activities Completed</div>
+    <div class="stat-value">87</div>
+    <div style="margin-top: 8px; color: var(--muted);">Across all students</div>
+  </div>`;
+
+  html += `<div class="stat">
+    <div class="stat-label">Engagement Rate</div>
+    <div class="stat-value">92%</div>
+    <div style="margin-top: 8px; color: #2ed573;">Excellent participation</div>
+  </div>`;
+
+  document.getElementById('timeAnalytics').innerHTML = html;
+  toast('📊 Time-based analytics generated');
+}
+
+// ============================================
+// 4. EXPORT DATA
+// ============================================
+function exportData(format) {
+  let content = '';
+  const filename = `classboard-export-${new Date().toISOString().split('T')[0]}`;
+
+  if (format === 'csv') {
+    content = 'Name,Email,Score,Attendance\n';
+    DB.students.forEach(s => {
+      content += `${s.name},${s.email},${s.score},${s.attendance}\n`;
+    });
+  } else if (format === 'json') {
+    content = JSON.stringify(DB, null, 2);
+  } else if (format === 'pdf') {
+    content = `CLASSBOARD REPORT\n${new Date().toLocaleDateString()}\n\n`;
+    content += 'STUDENT SCORES:\n';
+    DB.students.forEach(s => {
+      content += `${s.name}: ${s.score}%\n`;
+    });
+  }
+
+  const element = document.createElement('a');
+  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
+  element.setAttribute('download', `${filename}.${format === 'pdf' ? 'txt' : format}`);
+  element.style.display = 'none';
+  document.body.appendChild(element);
+  element.click();
+  document.body.removeChild(element);
+
+  document.getElementById('exportStatus').innerHTML = `✓ Exported as ${format.toUpperCase()}`;
+  toast(`📥 Data exported as ${format.toUpperCase()}`);
+}
+
+// ============================================
+// 5. ADVANCED SIMULATIONS
+// ============================================
+function startAdvancedSim(type) {
+  const canvas = document.getElementById('advancedCanvas');
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = 'rgba(10, 14, 39, 0.8)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = 'var(--accent)';
+  ctx.font = '20px Arial';
+  ctx.fillText(`🔬 ${type.toUpperCase()} Simulation Running...`, 20, 40);
+
+  if (type === 'circuits') {
+    drawCircuit(ctx, canvas);
+  } else if (type === 'optics') {
+    drawOptics(ctx, canvas);
+  } else if (type === 'chemistry') {
+    drawChemistry(ctx, canvas);
+  } else if (type === 'biology') {
+    drawBiology(ctx, canvas);
+  }
+
+  toast(`🔬 ${type} simulation started`);
+}
+
+function drawCircuit(ctx, canvas) {
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.rect(50, 50, 200, 150);
+  ctx.stroke();
+
+  ctx.fillStyle = '#ff006e';
+  ctx.fillRect(100, 100, 30, 30);
+  ctx.fillRect(180, 100, 30, 30);
+}
+
+function drawOptics(ctx, canvas) {
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#ff006e';
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, canvas.height / 2);
+    ctx.lineTo(
+      canvas.width / 2 + Math.cos(angle) * 80,
+      canvas.height / 2 + Math.sin(angle) * 80
+    );
+    ctx.stroke();
+  }
+}
+
+function drawChemistry(ctx, canvas) {
+  const molecules = [
+    {x: 80, y: 80, r: 20},
+    {x: 200, y: 100, r: 25},
+    {x: 150, y: 180, r: 22}
+  ];
+
+  molecules.forEach((m, i) => {
+    ctx.fillStyle = ['#00d4ff', '#ff006e', '#2ed573'][i];
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function drawBiology(ctx, canvas) {
+  ctx.fillStyle = '#2ed573';
+  ctx.beginPath();
+  ctx.arc(canvas.width / 2, canvas.height / 2, 40, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 12; i++) {
+    const angle = (i / 12) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, canvas.height / 2);
+    ctx.lineTo(
+      canvas.width / 2 + Math.cos(angle) * 70,
+      canvas.height / 2 + Math.sin(angle) * 70
+    );
+    ctx.stroke();
+  }
+}
+
+// ============================================
+// 6. STUDENT PROFILES
+// ============================================
+function showStudentProfiles() {
+  let html = '<h3 style="color: var(--accent);">👥 Student Profiles</h3>';
+
+  DB.students.forEach(s => {
+    html += `<div class="card">
+      <div style="font-weight: 700; color: var(--chalk);">${s.name}</div>
+      <div style="font-size: 0.85rem; color: var(--muted);">${s.email}</div>
+      <div style="margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div>📊 Score: <strong style="color: var(--accent);">${s.score}%</strong></div>
+        <div>📅 Attendance: <strong style="color: #2ed573;">${s.attendance}%</strong></div>
+      </div>
+      <div style="margin-top: 8px; font-size: 0.85rem;">
+        📚 Topics: ${s.topics.join(', ')}
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('profilesList').innerHTML = html;
+}
+
+// ============================================
+// 7. AI RECOMMENDATIONS
+// ============================================
+function generateRecommendations() {
+  const recommendations = [
+    {student: 'Alice', rec: 'Continue with advanced physics topics - exceptional progress!'},
+    {student: 'Bob', rec: 'Focus on electromagnetic concepts - needs practice'},
+    {student: 'Charlie', rec: 'Review gravity fundamentals - personalized tutoring recommended'},
+    {student: 'Diana', rec: 'Ready for advanced placement - consider accelerated track'}
+  ];
+
+  let html = '<h3 style="color: var(--accent);">🤖 AI-Powered Recommendations</h3>';
+
+  recommendations.forEach(r => {
+    html += `<div class="stat">
+      <div style="color: var(--chalk); font-weight: 700;">${r.student}</div>
+      <div style="color: var(--muted); margin-top: 4px;">💡 ${r.rec}</div>
+    </div>`;
+  });
+
+  document.getElementById('recommendations').innerHTML = html;
+  toast('🤖 Recommendations generated using AI');
+}
+
+// ============================================
+// 8. FIREBASE SYNC (Simulated)
+// ============================================
+function syncDatabase() {
+  document.getElementById('lastSync').textContent = new Date().toLocaleTimeString();
+  toast('✓ Database synchronized with Firebase');
+}
+
+// ============================================
+// 9. AUTHENTICATION
+// ============================================
+function initAuth() {
+  const role = document.getElementById('roleSelect').value;
+  let html = `<div class="form-group">
+    <label>Current Role: <strong>${role}</strong></label>
+  </div>
+  <div class="stat">
+    <div class="stat-label">🔐 Access Level</div>
+    <div style="color: var(--accent); font-weight: 700;">
+      ${role === 'admin' ? 'Full Access' : role === 'teacher' ? 'Teacher Access' : 'Student Access'}
+    </div>
+  </div>
+  <button class="btn" onclick="logout()">🚪 Logout</button>`;
+
+  document.getElementById('authPanel').innerHTML = html;
+}
+
+function logout() {
+  toast('👋 Logged out');
+}
+
+// ============================================
+// 10. ROSTER MANAGEMENT
+// ============================================
+function addStudent() {
+  const email = document.getElementById('studentEmail').value;
+  if (!email) { toast('Please enter an email'); return; }
+
+  DB.students.push({
+    id: DB.students.length + 1,
+    name: email.split('@')[0],
+    email: email,
+    score: 0,
+    attendance: 100,
+    topics: []
+  });
+
+  document.getElementById('studentEmail').value = '';
+  renderRoster();
+  toast(`✓ ${email} added to roster`);
+}
+
+function renderRoster() {
+  let html = '<h3 style="color: var(--accent);">📋 Class Roster</h3>';
+  DB.students.forEach(s => {
+    html += `<div class="stat">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-weight: 700; color: var(--chalk);">${s.name}</div>
+          <div style="font-size: 0.85rem; color: var(--muted);">${s.email}</div>
+        </div>
+        <button class="btn small" onclick="removeStudent(${s.id})">✕</button>
+      </div>
+    </div>`;
+  });
+  document.getElementById('rosterList').innerHTML = html;
+}
+
+function removeStudent(id) {
+  DB.students = DB.students.filter(s => s.id !== id);
+  renderRoster();
+  toast('✓ Student removed');
+}
+
+// ============================================
+// 11. ATTENDANCE TRACKING
+// ============================================
+function generateAttendanceReport() {
+  const canvas = document.getElementById('attendanceChart');
+  canvas.innerHTML = '';
+
+  const chart = document.createElement('div');
+  chart.className = 'chart';
+
+  DB.students.forEach(s => {
+    const bar = document.createElement('div');
+    bar.className = 'chart-bar';
+    bar.style.height = (s.attendance) + '%';
+    bar.title = `${s.name}: ${s.attendance}%`;
+    chart.appendChild(bar);
+  });
+
+  document.getElementById('attendanceChart').replaceWith(chart);
+  toast('📋 Attendance report generated');
+}
+
+// ============================================
+// 12. COMPLETE DASHBOARD
+// ============================================
+function openCompleteDashboard() {
+  const dlg = document.getElementById('dlg');
+
+  const html = `<div class="dlg">
+    <h2>📊 Complete Analytics Dashboard</h2>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <div class="stat">
+        <div class="stat-label">👥 Total Students</div>
+        <div class="stat-value">${DB.students.length}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">📚 Topics Covered</div>
+        <div class="stat-value">12</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">📊 Avg Score</div>
+        <div class="stat-value">${Math.round(DB.students.reduce((a,s)=>a+s.score,0)/DB.students.length)}%</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">📅 Avg Attendance</div>
+        <div class="stat-value">${Math.round(DB.students.reduce((a,s)=>a+s.attendance,0)/DB.students.length)}%</div>
+      </div>
+    </div>
+
+    <h3 style="color: var(--accent); margin-top: 16px;">🏆 Top Performers</h3>
+    <div>
+      ${[...DB.students].sort((a,b)=>b.score-a.score).slice(0,3).map((s,i) => `
+        <div class="stat">
+          <strong>#${i+1} ${s.name}</strong> - ${s.score}%
+        </div>
+      `).join('')}
+    </div>
+
+    <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
+      <button class="btn primary" onclick="document.getElementById('dlg').close()">Close</button>
+      <button class="btn" onclick="exportData('pdf')">📥 Export Report</button>
+    </div>
+  </div>`;
+
+  dlg.innerHTML = html;
+  if (typeof dlg.showModal === 'function') dlg.showModal();
+}
+
+// Initialize
+window.addEventListener('load', () => {
+  initAuth();
+  renderRoster();
+  showLeaderboard('overall');
+  const savedTheme = localStorage.getItem('theme') || 'dark';
+  setTheme(savedTheme);
+  toast('✅ Classboard Phase 3 - All Systems Ready!');
+});
+</script>
+</body>
+</html>

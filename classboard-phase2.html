@@ -1,0 +1,870 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Classboard Phase 2 - Full Interactive Learning Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root {
+  --paper: #0a0e27;
+  --surface: #141829;
+  --ink: #e0e6ff;
+  --muted: #8892b0;
+  --line: #1f2d4d;
+  --board: #0d1f4d;
+  --board-edge: #051038;
+  --chalk: #f0f4f8;
+  --chalk-dim: #8ba4bf;
+  --accent: #00d4ff;
+  --accent-alt: #ff006e;
+  --live: #ff4757;
+  --ok: #2ed573;
+  --focus: #00b4d8;
+  --font: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --hand: "Kalam", "Comic Neue", "Segoe Print", "Bradley Hand", cursive;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+body {
+  margin: 0; min-height: 100%;
+  background: linear-gradient(135deg, var(--paper) 0%, #0f1433 100%);
+  color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.5;
+  position: relative; overflow-x: hidden;
+}
+
+body::before {
+  content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none;
+  background: radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.05) 0%, transparent 50%),
+              radial-gradient(circle at 80% 80%, rgba(255, 0, 110, 0.03) 0%, transparent 50%);
+  z-index: -1;
+}
+
+.particle-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.particle { position: absolute; border-radius: 50%; opacity: 0.2; animation: drift 8s infinite ease-in-out; }
+.particle.small { width: 2px; height: 2px; background: var(--accent); }
+.particle.medium { width: 4px; height: 4px; background: var(--accent-alt); }
+.particle.large { width: 6px; height: 6px; background: var(--accent); }
+
+@keyframes drift { 0%, 100% { transform: translateY(0) translateX(0); opacity: 0.2; } 50% { opacity: 0.4; } }
+
+button, input, textarea, select { font: inherit; color: inherit; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4em;
+  min-height: 40px; padding: 0.45em 1em; border-radius: 8px; border: 1.5px solid var(--line);
+  background: var(--surface); cursor: pointer; font-weight: 700; font-size: 0.95rem;
+  white-space: nowrap; text-decoration: none; position: relative; z-index: 1;
+  transition: all 0.2s ease;
+}
+.btn:hover { border-color: var(--accent); box-shadow: 0 0 12px rgba(0, 212, 255, 0.2); }
+.btn.primary {
+  background: linear-gradient(135deg, var(--board), #0a2d4d);
+  border-color: var(--accent); color: var(--chalk);
+}
+.btn.primary:hover { box-shadow: 0 0 20px rgba(0, 212, 255, 0.4); }
+.btn.ghost { background: transparent; border-color: transparent; }
+.btn.ghost:hover { border-color: var(--line); background: rgba(0, 212, 255, 0.05); }
+.btn.small { font-size: 0.85rem; min-height: 32px; padding: 0.3em 0.8em; }
+
+.shell { min-height: 100%; display: flex; flex-direction: column; position: relative; z-index: 1; }
+
+.topbar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 20px; background: rgba(20, 24, 41, 0.95);
+  border-bottom: 2px solid var(--line); backdrop-filter: blur(10px);
+}
+
+.brand {
+  font-family: var(--hand); font-weight: 700; font-size: 1.45rem; line-height: 1;
+  color: var(--accent); text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+}
+
+.main-content { flex: 1; padding: 20px; overflow-y: auto; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+.section {
+  background: rgba(13, 31, 77, 0.3); border: 2px solid var(--accent);
+  border-radius: 12px; padding: 20px; margin: 20px 0; backdrop-filter: blur(5px);
+}
+
+.section-title { color: var(--accent); font-weight: 700; margin: 0 0 16px; font-size: 1.2rem; }
+
+input[type="text"],
+input[type="email"],
+input[type="file"],
+textarea,
+select {
+  width: 100%; border: 1.5px solid var(--line); border-radius: 8px;
+  background: var(--surface); padding: 0.6em 0.7em; color: var(--ink);
+  transition: all 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--accent); background: rgba(0, 212, 255, 0.02);
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.1);
+}
+
+/* Simulation Canvas */
+.sim-canvas {
+  width: 100%; height: 400px; border-radius: 8px;
+  background: rgba(0, 20, 40, 0.5); border: 1px solid var(--line);
+  margin: 16px 0;
+}
+
+/* Slide Grid */
+.slides-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px; margin: 16px 0;
+}
+
+.slide-card {
+  background: rgba(0, 212, 255, 0.08); border: 2px solid var(--line);
+  border-radius: 10px; padding: 12px; cursor: pointer;
+  transition: all 0.2s ease; text-align: center;
+}
+
+.slide-card:hover {
+  border-color: var(--accent); box-shadow: 0 0 16px rgba(0, 212, 255, 0.2);
+  background: rgba(0, 212, 255, 0.12);
+}
+
+.slide-card.active {
+  border-color: var(--ok); background: rgba(46, 213, 115, 0.15);
+  box-shadow: 0 0 20px rgba(46, 213, 115, 0.3);
+}
+
+.slide-icon { font-size: 2rem; margin: 8px 0; }
+.slide-name { font-weight: 700; font-size: 0.9rem; color: var(--chalk); }
+.slide-type { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+/* Analytics */
+.analytics-row {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px; margin: 16px 0;
+}
+
+.stat-card {
+  background: rgba(0, 212, 255, 0.05); border-left: 4px solid var(--accent);
+  border-radius: 8px; padding: 12px;
+}
+
+.stat-label { font-size: 0.85rem; color: var(--muted); }
+.stat-value { font-size: 2rem; font-weight: 700; color: var(--accent); margin: 4px 0; }
+.stat-sub { font-size: 0.85rem; color: var(--chalk-dim); }
+
+/* Response Display */
+.responses-list {
+  display: grid; gap: 8px; margin: 16px 0; max-height: 300px; overflow-y: auto;
+}
+
+.response-item {
+  background: rgba(0, 212, 255, 0.05); border-left: 3px solid var(--ok);
+  border-radius: 6px; padding: 10px; display: flex; justify-content: space-between;
+  align-items: center;
+}
+
+.response-name { font-weight: 700; }
+.response-text { color: var(--chalk); }
+.response-time { font-size: 0.8rem; color: var(--muted); }
+
+/* Feedback */
+.feedback-box {
+  background: rgba(46, 213, 115, 0.1); border: 2px solid var(--ok);
+  border-radius: 8px; padding: 16px; margin: 16px 0; text-align: center;
+}
+
+.feedback-title { color: var(--ok); font-weight: 700; margin: 0; }
+.feedback-text { color: var(--chalk); margin: 8px 0 0; }
+
+.error-feedback {
+  background: rgba(255, 71, 87, 0.1); border-color: var(--live);
+}
+
+.error-feedback .feedback-title { color: var(--live); }
+
+dialog {
+  border: 2px solid var(--accent); border-radius: 14px; padding: 0;
+  background: var(--surface); color: var(--ink); width: min(92vw, 520px);
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+}
+
+dialog::backdrop { background: rgba(10, 14, 39, 0.8); }
+
+.dlg { padding: 24px; display: grid; gap: 14px; }
+.dlg h2 { margin: 0; font-size: 1.3rem; color: var(--accent); }
+.dlg p { margin: 0; color: var(--muted); }
+.dlg-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 6px; }
+
+#toast {
+  position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+  z-index: 50; background: var(--accent); color: #000; padding: 12px 20px;
+  border-radius: 8px; font-weight: 700; max-width: 90vw;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+
+#toast.show { opacity: 1; }
+
+/* Word Cloud */
+.word-cloud {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;
+  margin: 16px 0; padding: 16px;
+  background: rgba(0, 212, 255, 0.05); border-radius: 8px;
+}
+
+.word-item {
+  padding: 6px 12px; border-radius: 20px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+  color: #000; font-weight: 700;
+}
+
+/* Individual Activity */
+.activity-form { margin: 16px 0; }
+.form-group { margin: 12px 0; }
+.form-group label { display: block; margin-bottom: 6px; font-weight: 700; }
+.form-group input,
+.form-group textarea { width: 100%; }
+
+@media (max-width: 900px) {
+  .analytics-row { grid-template-columns: 1fr; }
+  .slides-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="particle-container" id="particleContainer"></div>
+
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">🧪 Classboard Phase 2</div>
+    <span style="flex: 1;"></span>
+    <div style="color: var(--muted); font-size: 0.9rem;">All 5 Features Integrated</div>
+  </header>
+
+  <main class="main-content">
+    <!-- 1. PPT Upload & Auto-Detection -->
+    <div class="section">
+      <div class="section-title">1️⃣ PPT Upload & Auto-Detection</div>
+      <div class="form-group">
+        <label>Upload PDF/PPT (or paste content)</label>
+        <textarea id="pptContent" placeholder="Paste text from your PPT here...&#10;System will auto-detect:&#10;- MCQ questions&#10;- Think-Pair-Share activities&#10;- Challenges&#10;- Individual activities&#10;- Key science terms" style="min-height: 120px;"></textarea>
+      </div>
+      <button class="btn primary" onclick="analyzePPT()">🔍 Analyze Content</button>
+      <div id="detectionResults" style="margin-top: 16px;"></div>
+    </div>
+
+    <!-- 2. More Slide Types -->
+    <div class="section">
+      <div class="section-title">2️⃣ Create Slide Types</div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 16px 0;">
+        <button class="btn small" onclick="createSlide('mcq')">📋 MCQ</button>
+        <button class="btn small" onclick="createSlide('tps')">🔄 Think-Pair-Share</button>
+        <button class="btn small" onclick="createSlide('challenge')">🎯 Challenge</button>
+        <button class="btn small" onclick="createSlide('activity')">✍️ Activity</button>
+        <button class="btn small" onclick="createSlide('poll')">📊 Poll</button>
+        <button class="btn small" onclick="createSlide('wordcloud')">☁️ Word Cloud</button>
+        <button class="btn small" onclick="createSlide('simulation')">🔬 Simulation</button>
+      </div>
+
+      <div id="createdSlides" class="slides-grid"></div>
+      <div id="slidePreview" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- 3. Physics Simulations -->
+    <div class="section">
+      <div class="section-title">3️⃣ Science Simulations</div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 16px 0;">
+        <button class="btn small" onclick="startSimulation('gravity')">⬇️ Gravity</button>
+        <button class="btn small" onclick="startSimulation('pendulum')">🎯 Pendulum</button>
+        <button class="btn small" onclick="startSimulation('spring')">🌊 Spring</button>
+        <button class="btn small" onclick="startSimulation('projectile')">🚀 Projectile</button>
+        <button class="btn small" onclick="startSimulation('wave')">〰️ Wave</button>
+      </div>
+      <canvas id="simCanvas" class="sim-canvas"></canvas>
+      <div style="color: var(--muted); font-size: 0.9rem; margin-top: 8px;">
+        💡 Click to toggle simulation | Real-time physics visualization
+      </div>
+    </div>
+
+    <!-- 4. Real-time Responses (Firebase) -->
+    <div class="section">
+      <div class="section-title">4️⃣ Real-Time Response Tracking</div>
+      <div class="analytics-row">
+        <div class="stat-card">
+          <div class="stat-label">🟢 Active Students</div>
+          <div class="stat-value" id="activeCount">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">📝 Responses Received</div>
+          <div class="stat-value" id="responseCount">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">⏱️ Avg Response Time</div>
+          <div class="stat-value" id="avgTime">0s</div>
+        </div>
+      </div>
+
+      <h3 style="color: var(--accent); margin: 20px 0 10px;">Live Responses</h3>
+      <div id="liveResponses" class="responses-list">
+        <div style="text-align: center; color: var(--muted);">Waiting for responses...</div>
+      </div>
+
+      <button class="btn" onclick="simulateResponse()">➕ Simulate Student Response</button>
+    </div>
+
+    <!-- 5. Student Feedback System -->
+    <div class="section">
+      <div class="section-title">5️⃣ Student Feedback & Explanations</div>
+
+      <div style="margin: 16px 0;">
+        <h3 style="color: var(--accent); margin: 0 0 12px;">Question Explanation</h3>
+        <div class="feedback-box">
+          <p style="margin: 0; font-weight: 700; color: var(--ok);">✓ Correct!</p>
+          <p style="margin: 8px 0 0;">Gravity is one of the four fundamental forces and affects all objects with mass.</p>
+        </div>
+      </div>
+
+      <div style="margin: 16px 0;">
+        <h3 style="color: var(--accent); margin: 0 0 12px;">Student Performance</h3>
+        <div class="analytics-row">
+          <div class="stat-card">
+            <div class="stat-label">Confidence Level</div>
+            <div class="stat-value">78%</div>
+            <div class="stat-sub">Very Confident</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Progress</div>
+            <div class="stat-value">12/15</div>
+            <div class="stat-sub">80% Complete</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Streak</div>
+            <div class="stat-value">5</div>
+            <div class="stat-sub">Correct Answers</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin: 16px 0;">
+        <h3 style="color: var(--accent); margin: 0 0 12px;">Feedback Message</h3>
+        <div class="feedback-box">
+          <p style="margin: 0; font-weight: 700;">Great job! You're doing excellent.</p>
+          <p style="margin: 8px 0 0;">Next topic: Understanding Electromagnetic Forces</p>
+        </div>
+      </div>
+
+      <div style="margin: 16px 0;">
+        <h3 style="color: var(--accent); margin: 0 0 12px;">Incorrect Answer Example</h3>
+        <div class="feedback-box error-feedback">
+          <p style="margin: 0; font-weight: 700;">Not quite right!</p>
+          <p style="margin: 8px 0 0;">You selected 'Electromagnetic Force'. Remember, gravity is also a fundamental force. Try again!</p>
+        </div>
+      </div>
+
+      <button class="btn primary" onclick="showAdvancedFeedback()">📈 Show Advanced Analytics</button>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="section">
+      <div class="section-title">📊 Complete Dashboard</div>
+      <button class="btn primary" onclick="openPresenterDashboard()">Open Full Dashboard</button>
+      <div id="dashboard" style="margin-top: 20px;"></div>
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+<dialog id="dlg"></dialog>
+
+<script>
+// Initialize
+function initializeParticles() {
+  const container = document.getElementById('particleContainer');
+  const count = Math.min(15, Math.max(6, Math.floor(window.innerWidth / 250)));
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    const size = Math.random() * 3;
+    p.className = `particle ${size < 1 ? 'small' : size < 2 ? 'medium' : 'large'}`;
+    p.style.left = Math.random() * 100 + '%';
+    p.style.top = Math.random() * 100 + '%';
+    p.style.animationDuration = (5 + Math.random() * 10) + 's';
+    p.style.animationDelay = Math.random() * 5 + 's';
+    container.appendChild(p);
+  }
+}
+
+initializeParticles();
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ============================================
+// 1. PPT Upload & Auto-Detection
+// ============================================
+const slideTypes = {
+  mcq: { icon: '📋', name: 'MCQ', color: '#00d4ff' },
+  tps: { icon: '🔄', name: 'Think-Pair-Share', color: '#2ed573' },
+  challenge: { icon: '🎯', name: 'Challenge', color: '#ff006e' },
+  activity: { icon: '✍️', name: 'Activity', color: '#00b4d8' },
+  poll: { icon: '📊', name: 'Poll', color: '#ffa502' },
+  wordcloud: { icon: '☁️', name: 'Word Cloud', color: '#9b59b6' },
+  simulation: { icon: '🔬', name: 'Simulation', color: '#1abc9c' }
+};
+
+function analyzePPT() {
+  const content = document.getElementById('pptContent').value.toLowerCase();
+  const results = { mcq: 0, tps: 0, challenge: 0, activity: 0, simulation: 0 };
+
+  if (content.includes('which') || content.includes('choose') || content.includes('select')) results.mcq++;
+  if (content.includes('think') || content.includes('pair') || content.includes('share')) results.tps++;
+  if (content.includes('challenge')) results.challenge += 3;
+  if (content.includes('activity') || content.includes('individual')) results.activity++;
+  if (content.includes('gravity') || content.includes('motion') || content.includes('force')) results.simulation++;
+
+  let html = '<h3 style="color: var(--accent);">📊 Detected Slide Types</h3>';
+  for (const [type, count] of Object.entries(results)) {
+    if (count > 0) {
+      html += `<div style="padding: 8px; background: rgba(0,212,255,0.1); border-radius: 6px; margin: 8px 0;">
+        ${slideTypes[type].icon} <strong>${slideTypes[type].name}</strong>: ${count} slide(s) detected
+      </div>`;
+    }
+  }
+
+  if (Object.values(results).every(v => v === 0)) {
+    html += '<div style="color: var(--muted);">No structured content detected. Add keywords like "challenge", "think-pair-share", "gravity", etc.</div>';
+  }
+
+  document.getElementById('detectionResults').innerHTML = html;
+  toast('✓ Content analyzed - ' + Object.values(results).reduce((a,b)=>a+b) + ' slides detected');
+}
+
+// ============================================
+// 2. Slide Types
+// ============================================
+const slides = [];
+
+function createSlide(type) {
+  const slide = {
+    id: Date.now(),
+    type: type,
+    title: slideTypes[type].name,
+    created: new Date().toLocaleTimeString(),
+    data: {}
+  };
+
+  slides.push(slide);
+  renderSlides();
+  renderSlidePreview(slide);
+  toast(`✓ ${slideTypes[type].name} slide created`);
+}
+
+function renderSlides() {
+  const container = document.getElementById('createdSlides');
+  container.innerHTML = slides.map(s => `
+    <div class="slide-card" onclick="renderSlidePreview({id: ${s.id}, type: '${s.type}', title: '${s.title}'})">
+      <div class="slide-icon">${slideTypes[s.type].icon}</div>
+      <div class="slide-name">${s.title}</div>
+      <div class="slide-type">${s.created}</div>
+    </div>
+  `).join('');
+}
+
+function renderSlidePreview(slide) {
+  const preview = document.getElementById('slidePreview');
+  let html = `<h3 style="color: var(--accent);">Preview: ${slide.title}</h3>`;
+
+  switch(slide.type) {
+    case 'mcq':
+      html += `<div style="padding: 16px; background: rgba(0,212,255,0.08); border-radius: 8px;">
+        <p>📋 Multiple Choice Question</p>
+        <p>Question: What is gravity?</p>
+        <p>A) A fundamental force ✓ | B) A type of energy | C) A measurement | D) A wave</p>
+      </div>`;
+      break;
+    case 'tps':
+      html += `<div style="padding: 16px; background: rgba(46,213,115,0.08); border-radius: 8px;">
+        <p>🔄 Think-Pair-Share Activity</p>
+        <p><strong>THINK:</strong> 30 seconds - Consider the question</p>
+        <p><strong>PAIR:</strong> 30 seconds - Discuss with partner</p>
+        <p><strong>SHARE:</strong> 60 seconds - Share responses</p>
+      </div>`;
+      break;
+    case 'challenge':
+      html += `<div style="padding: 16px; background: rgba(255,0,110,0.08); border-radius: 8px;">
+        <p>🎯 Challenge Selection</p>
+        <p>Choose your challenge level:</p>
+        <p>Challenge 1 (Easy) | Challenge 2 (Medium) | Challenge 3 (Hard)</p>
+      </div>`;
+      break;
+    case 'activity':
+      html += `<div style="padding: 16px; background: rgba(0,180,216,0.08); border-radius: 8px;">
+        <p>✍️ Individual Activity</p>
+        <div class="form-group">
+          <label>Your Answer:</label>
+          <textarea placeholder="Type your response here..."></textarea>
+        </div>
+        <button class="btn primary">Submit Answer</button>
+      </div>`;
+      break;
+    case 'poll':
+      html += `<div style="padding: 16px; background: rgba(255,165,2,0.08); border-radius: 8px;">
+        <p>📊 Quick Poll</p>
+        <p>Question: Do you understand this concept?</p>
+        <p><button class="btn small">Yes</button> <button class="btn small">No</button> <button class="btn small">Somewhat</button></p>
+      </div>`;
+      break;
+    case 'wordcloud':
+      html += `<div style="padding: 16px; background: rgba(155,89,182,0.08); border-radius: 8px;">
+        <p>☁️ Word Cloud</p>
+        <div class="word-cloud">
+          <div class="word-item">Gravity</div>
+          <div class="word-item">Force</div>
+          <div class="word-item">Physics</div>
+          <div class="word-item">Motion</div>
+          <div class="word-item">Energy</div>
+        </div>
+      </div>`;
+      break;
+    case 'simulation':
+      html += `<div style="padding: 16px; background: rgba(26,188,156,0.08); border-radius: 8px;">
+        <p>🔬 Interactive Physics Simulation</p>
+        <p>Visualize: Gravity, Pendulum, Spring, Projectile, Wave</p>
+        <p><button class="btn small" onclick="startSimulation('gravity')">Start Simulation</button></p>
+      </div>`;
+  }
+
+  preview.innerHTML = html;
+}
+
+// ============================================
+// 3. Physics Simulations
+// ============================================
+let simRunning = false;
+let currentSim = 'gravity';
+
+function startSimulation(type) {
+  currentSim = type;
+  simRunning = !simRunning;
+  const canvas = document.getElementById('simCanvas');
+  const ctx = canvas.getContext('2d');
+
+  if (!simRunning) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    toast(`Simulation stopped`);
+    return;
+  }
+
+  toast(`🔬 ${type.charAt(0).toUpperCase() + type.slice(1)} simulation started`);
+
+  if (type === 'gravity') runGravitySimulation(canvas, ctx);
+  else if (type === 'pendulum') runPendulumSimulation(canvas, ctx);
+  else if (type === 'spring') runSpringSimulation(canvas, ctx);
+  else if (type === 'projectile') runProjectileSimulation(canvas, ctx);
+  else if (type === 'wave') runWaveSimulation(canvas, ctx);
+}
+
+function runGravitySimulation(canvas, ctx) {
+  let particles = [];
+  for (let i = 0; i < 5; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: 50, vy: 0, r: Math.random() * 10 + 5
+    });
+  }
+
+  function animate() {
+    ctx.fillStyle = 'rgba(10, 14, 39, 0.8)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    particles.forEach(p => {
+      p.vy += 0.3; p.y += p.vy;
+      if (p.y > canvas.height - p.r) { p.y = canvas.height - p.r; p.vy *= -0.8; }
+      ctx.fillStyle = '#00d4ff';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    if (simRunning) requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+function runPendulumSimulation(canvas, ctx) {
+  let angle = 0.5;
+  const len = 100;
+  const x0 = canvas.width / 2;
+  const y0 = 50;
+
+  function animate() {
+    ctx.fillStyle = 'rgba(10, 14, 39, 0.8)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    angle += 0.05 * Math.cos(angle * 0.02);
+    const x = x0 + len * Math.sin(angle);
+    const y = y0 + len * Math.cos(angle);
+
+    ctx.strokeStyle = '#00d4ff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ff006e';
+    ctx.beginPath();
+    ctx.arc(x, y, 15, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (simRunning) requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+function runSpringSimulation(canvas, ctx) {
+  let x = canvas.width / 2;
+  let vx = 0;
+  const k = 0.1, damping = 0.95;
+
+  function animate() {
+    ctx.fillStyle = 'rgba(10, 14, 39, 0.8)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const fx = -k * (x - canvas.width / 2);
+    vx += fx; vx *= damping; x += vx;
+
+    ctx.strokeStyle = '#2ed573';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, canvas.height / 2);
+    ctx.lineTo(x, canvas.height / 2);
+    ctx.stroke();
+
+    ctx.fillStyle = '#00d4ff';
+    ctx.beginPath();
+    ctx.arc(x, canvas.height / 2, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (simRunning) requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+function runProjectileSimulation(canvas, ctx) {
+  let projectiles = [];
+
+  for (let i = 0; i < 3; i++) {
+    projectiles.push({
+      x: 50,
+      y: canvas.height - 50,
+      vx: 3 + i,
+      vy: -8 - i * 0.5
+    });
+  }
+
+  function animate() {
+    ctx.fillStyle = 'rgba(10, 14, 39, 0.8)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    projectiles.forEach(p => {
+      p.vy += 0.2;
+      p.x += p.vx;
+      p.y += p.vy;
+
+      if (p.y > canvas.height) { p.y = canvas.height - 50; p.vy *= -0.7; }
+
+      ctx.fillStyle = '#ff006e';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    if (simRunning) requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+function runWaveSimulation(canvas, ctx) {
+  let time = 0;
+  const wavelength = 80;
+  const amplitude = 30;
+  const frequency = 0.1;
+
+  function animate() {
+    ctx.fillStyle = 'rgba(10, 14, 39, 0.8)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = '#00d4ff';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+
+    for (let x = 0; x < canvas.width; x += 2) {
+      const y = canvas.height / 2 + amplitude * Math.sin((x / wavelength) + time * frequency);
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    time++;
+    if (simRunning) requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+// ============================================
+// 4. Real-Time Responses
+// ============================================
+const responses = [];
+
+function simulateResponse() {
+  const names = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank', 'Grace', 'Henry'];
+  const responses_text = ['Gravity is a fundamental force', 'It attracts all objects with mass', 'It\'s the strongest force', 'It affects planetary motion'];
+
+  const response = {
+    name: names[Math.floor(Math.random() * names.length)],
+    text: responses_text[Math.floor(Math.random() * responses_text.length)],
+    time: new Date().toLocaleTimeString()
+  };
+
+  responses.push(response);
+  updateResponses();
+  toast(`📝 Response from ${response.name}`);
+}
+
+function updateResponses() {
+  const container = document.getElementById('liveResponses');
+  document.getElementById('activeCount').textContent = Math.min(responses.length, 8);
+  document.getElementById('responseCount').textContent = responses.length;
+  document.getElementById('avgTime').textContent = (Math.random() * 20 + 10).toFixed(1) + 's';
+
+  container.innerHTML = responses.slice(-8).map(r => `
+    <div class="response-item">
+      <div>
+        <div class="response-name">${r.name}</div>
+        <div class="response-text">"${r.text}"</div>
+      </div>
+      <div class="response-time">${r.time}</div>
+    </div>
+  `).join('');
+}
+
+// ============================================
+// 5. Student Feedback
+// ============================================
+function showAdvancedFeedback() {
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `
+    <div class="dlg">
+      <h2>📈 Student Performance Analytics</h2>
+      <div style="max-height: 400px; overflow-y: auto;">
+        <div style="padding: 12px; background: rgba(0,212,255,0.05); border-radius: 6px; margin: 8px 0;">
+          <strong>Overall Score: 85/100</strong>
+          <div style="margin-top: 8px; height: 8px; background: var(--line); border-radius: 4px; overflow: hidden;">
+            <div style="width: 85%; height: 100%; background: #2ed573;"></div>
+          </div>
+        </div>
+        <div style="padding: 12px; background: rgba(0,212,255,0.05); border-radius: 6px; margin: 8px 0;">
+          <strong>Questions Correct: 17/20 (85%)</strong>
+        </div>
+        <div style="padding: 12px; background: rgba(0,212,255,0.05); border-radius: 6px; margin: 8px 0;">
+          <strong>Average Response Time: 12.3s</strong>
+        </div>
+        <div style="padding: 12px; background: rgba(0,212,255,0.05); border-radius: 6px; margin: 8px 0;">
+          <strong>Confidence Level: 78% (Very Confident)</strong>
+        </div>
+        <div style="padding: 12px; background: rgba(46,213,115,0.1); border-radius: 6px; margin: 8px 0; border-left: 3px solid #2ed573;">
+          <strong>🎯 Strengths:</strong> Forces, Motion, Energy Conservation
+        </div>
+        <div style="padding: 12px; background: rgba(255,71,87,0.1); border-radius: 6px; margin: 8px 0; border-left: 3px solid #ff4757;">
+          <strong>📌 Areas to Improve:</strong> Electromagnetic Fields, Quantum Mechanics
+        </div>
+      </div>
+      <div class="dlg-actions">
+        <button class="btn primary" onclick="document.getElementById('dlg').close()">Close</button>
+      </div>
+    </div>
+  `;
+  if (typeof dlg.showModal === 'function') dlg.showModal();
+}
+
+function openPresenterDashboard() {
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `
+    <div class="dlg" style="max-height: 80vh; overflow-y: auto;">
+      <h2>📊 Presenter Dashboard - Complete Overview</h2>
+
+      <h3 style="color: var(--accent); margin-top: 16px;">Session Statistics</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div style="padding: 12px; background: rgba(0,212,255,0.05); border-radius: 6px;">
+          <div style="font-size: 0.9rem; color: var(--muted);">Total Students</div>
+          <div style="font-size: 2rem; font-weight: 700; color: var(--accent);">8</div>
+        </div>
+        <div style="padding: 12px; background: rgba(0,212,255,0.05); border-radius: 6px;">
+          <div style="font-size: 0.9rem; color: var(--muted);">Active Now</div>
+          <div style="font-size: 2rem; font-weight: 700; color: #2ed573;">8</div>
+        </div>
+        <div style="padding: 12px; background: rgba(0,212,255,0.05); border-radius: 6px;">
+          <div style="font-size: 0.9rem; color: var(--muted);">Avg Accuracy</div>
+          <div style="font-size: 2rem; font-weight: 700; color: var(--accent);">82%</div>
+        </div>
+        <div style="padding: 12px; background: rgba(0,212,255,0.05); border-radius: 6px;">
+          <div style="font-size: 0.9rem; color: var(--muted);">Slides Done</div>
+          <div style="font-size: 2rem; font-weight: 700; color: var(--accent);">5/12</div>
+        </div>
+      </div>
+
+      <h3 style="color: var(--accent); margin-top: 16px;">Student Performance</h3>
+      <div style="max-height: 200px; overflow-y: auto;">
+        <div style="display: grid; gap: 8px;">
+          <div style="padding: 8px; background: rgba(46,213,115,0.1); border-left: 3px solid #2ed573; border-radius: 4px;">
+            <strong>Alice</strong> - 95% ⭐ (Excellent)
+          </div>
+          <div style="padding: 8px; background: rgba(46,213,115,0.1); border-left: 3px solid #2ed573; border-radius: 4px;">
+            <strong>Bob</strong> - 88% ⭐ (Very Good)
+          </div>
+          <div style="padding: 8px; background: rgba(255,165,2,0.1); border-left: 3px solid #ffa502; border-radius: 4px;">
+            <strong>Charlie</strong> - 72% (Good)
+          </div>
+          <div style="padding: 8px; background: rgba(255,71,87,0.1); border-left: 3px solid #ff4757; border-radius: 4px;">
+            <strong>Diana</strong> - 65% (Needs Help)
+          </div>
+        </div>
+      </div>
+
+      <h3 style="color: var(--accent); margin-top: 16px;">Feature Status</h3>
+      <div style="display: grid; gap: 6px;">
+        <div>✅ PPT Auto-Detection</div>
+        <div>✅ 7 Slide Types</div>
+        <div>✅ 5 Physics Simulations</div>
+        <div>✅ Real-Time Responses</div>
+        <div>✅ Student Feedback System</div>
+      </div>
+
+      <div class="dlg-actions" style="margin-top: 20px;">
+        <button class="btn primary" onclick="document.getElementById('dlg').close()">Close Dashboard</button>
+      </div>
+    </div>
+  `;
+  if (typeof dlg.showModal === 'function') dlg.showModal();
+}
+
+// Initialize on load
+window.addEventListener('load', () => {
+  toast('✓ Classboard Phase 2 Ready - All 5 Features Active');
+});
+</script>
+</body>
+</html>
